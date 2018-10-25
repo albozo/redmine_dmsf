@@ -21,12 +21,18 @@
 module RedmineDmsf
   module Patches
     module ProjectHelperPatch
+      def self.included base # :nodoc:
+        base.send :include, InstanceMethods
+        base.class_eval do
+          alias_method_chain :project_settings_tabs, :dmsf
+        end
+      end
 
       ##################################################################################################################
       # Overridden methods
-
-      def project_settings_tabs
-        tabs = super
+      module InstanceMethods
+      def project_settings_tabs_with_dmsf
+        tabs = project_settings_tabs_without_dmsf
         dmsf_tabs = [
           {:name => 'dmsf', :action => {:controller => 'dmsf_state', :action => 'user_pref_save'},
            :partial => 'dmsf_state/user_pref', :label => :menu_dmsf},
@@ -36,10 +42,10 @@ module RedmineDmsf
         tabs.concat(dmsf_tabs.select {|dmsf_tab| User.current.allowed_to?(dmsf_tab[:action], @project)})
         return tabs
       end
-
+      end
     end
   end
 end
 
 RedmineExtensions::PatchManager.register_helper_patch 'ProjectsHelper',
-    'RedmineDmsf::Patches::ProjectHelperPatch', prepend: true
+    'RedmineDmsf::Patches::ProjectHelperPatch'#, prepend: true
